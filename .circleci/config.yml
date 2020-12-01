@@ -121,10 +121,15 @@ jobs:
       - checkout
       - run:
           name: Heroku Deploy
-          command: echo todo && false
+          command: git push heroku main && git push && heroku open
       - run:
           name: Smoke Test
-          command: echo todo && false
+          command: 
+            HTTPCODE=`curl -s -o /dev/null -w "%{http_code}" https://devoptpcd.herokuapp.com/`
+            if [ "$HTTPCODE" -ne 200 ];then
+                echo "heroku app not responding, failing deploy"
+                exit 1
+            fi
 
 workflows:
   version: 2
@@ -140,15 +145,6 @@ workflows:
       - lint:
           requires:
             - build
-      - docker-build-and-push:
-          requires:
-            - build
-            - lint
-            - back-test-e2e
-            - back-test-unit
-          filters:
-            branches:
-              only: main
       - back-deploy-heroku:
           requires:
             - build
